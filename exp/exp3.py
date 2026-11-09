@@ -30,6 +30,7 @@ from src.correlations import (
     corr_p_u2_formula,
     corr_p2_u2_direct,
     corr_p2_u2_formula,
+    corr_p2_u2_via_exact_mu2,
     variation_coefficients,
     vwap,
 )
@@ -51,6 +52,7 @@ def _one_trial(trades: dict, n: int, seed: int, volume_dist: str, value_dist: st
     cp2u2_direct = corr_p2_u2_direct(C, p, U)
     cp2u2_formula = corr_p2_u2_formula(C, U)
     cp2u2_from_relation = 2.0 * cpu2_direct * p_vwap
+    cp2u2_exact_mu2 = corr_p2_u2_via_exact_mu2(C, p, U)
 
     return {
         "N": n,
@@ -67,6 +69,7 @@ def _one_trial(trades: dict, n: int, seed: int, volume_dist: str, value_dist: st
         "corr_p2_U2_direct": cp2u2_direct,
         "corr_p2_U2_formula": cp2u2_formula,
         "corr_p2_U2_from_relation": cp2u2_from_relation,
+        "corr_p2_U2_via_exact_mu2": cp2u2_exact_mu2,
     }
 
 
@@ -129,6 +132,14 @@ def summarize_and_save(df: pd.DataFrame) -> dict:
         df["corr_p2_U2_direct"] - df["corr_p2_U2_from_relation"]
     ).abs()
 
+    # Eq. C.13, using the literal sample mu^2(p) (Eq. C.11) rather than the
+    # Eq. C.14 substitute, is an exact algebraic rearrangement of Eq. C.9/
+    # C.7/C.11/C.12 and must match the direct computation to floating-point
+    # precision; this isolates Eq. C.14 as the only source of the gap above.
+    df["exact_mu2_error"] = (
+        df["corr_p2_U2_direct"] - df["corr_p2_U2_via_exact_mu2"]
+    ).abs()
+
     correlated = df[df["case"] == "correlated_C_U"]
     constant = df[df["case"] == "constant_volume"]
 
@@ -143,6 +154,8 @@ def summarize_and_save(df: pd.DataFrame) -> dict:
              "value": correlated["corr_p_U2_direct"].abs().median()},
             {"metric": "max chi^2(U) for constant-volume case (should be ~0)",
              "value": constant["chi2_U"].abs().max()},
+            {"metric": "max |corr[p^2,U^2] direct - via exact mu^2(p)| (Eq. C.13, exact)",
+             "value": df["exact_mu2_error"].max()},
         ]
     )
     summary.to_csv(f"{RESULTS_DIR}/exp3_summary.csv", index=False)
@@ -181,6 +194,19 @@ def summarize_and_save(df: pd.DataFrame) -> dict:
     fig.savefig(f"{RESULTS_DIR}/exp3_interdependence.png", dpi=150)
     plt.close(fig)
 
+    # Relative form of the Eq. C.13 identity check: absolute errors scale
+    # with the raw magnitude of C(t_i), U(t_i) in the synthetic sample (of
+    # order 1e10-1e11 for the correlated trials, versus float64 noise of
+    # order 1e-9 in the degenerate constant-volume trials where Eq. C.13 is
+    # mathematically exactly zero). A floor well above that noise floor and
+    # well below the genuine scale separates true near-zero trials (noise
+    # only, both sides ~1e-9) from the genuine large-magnitude trials.
+    noise_floor = 1e-3
+    nonzero = df["corr_p2_U2_direct"].abs() > noise_floor
+    max_exact_mu2_rel_error = float(
+        (df.loc[nonzero, "exact_mu2_error"] / df.loc[nonzero, "corr_p2_U2_direct"].abs()).max()
+    )
+
     return {
         "n_trials": len(df),
         "max_cpu2_formula_error": float(df["cpu2_formula_error"].max()),
@@ -190,6 +216,7 @@ def summarize_and_save(df: pd.DataFrame) -> dict:
         "median_abs_corr_p_u2_correlated": float(
             correlated["corr_p_U2_direct"].abs().median()
         ),
+        "max_exact_mu2_rel_error": max_exact_mu2_rel_error,
     }
 
 
@@ -204,10 +231,18 @@ def main() -> dict:
         "corr[p, U^2] must be non-zero when trade values and volumes are "
         "correlated, capturing statistical interdependence beyond corr[p,U]."
     )
+    assert metrics["max_exact_mu2_rel_error"] < 1e-6, (
+        "corr[p^2, U^2] via Eq. C.13 with the literal mu^2(p) (Eq. C.11) must "
+        "match the direct computation (Eq. C.9) to floating-point precision, "
+        "since Eq. C.13 is an exact rearrangement; a failure here would mean "
+        "Eq. C.14, not the algebra of Eq. C.13, is the source of any gap."
+    )
     logger.info(
         "exp3: PASSED -- corr[p,U^2] matches its exact closed form (Eq. C.8) "
-        "and is non-zero when C and U are correlated; see results/exp3_summary.csv "
-        "for the measured corr[p^2,U^2] vs. Eq. 4.9/C.16 comparison"
+        "and is non-zero when C and U are correlated; Eq. C.13 with the exact "
+        "mu^2(p) reproduces corr[p^2,U^2] to floating-point precision, isolating "
+        "Eq. C.14 as the source of the gap to Eq. C.16; see "
+        "results/exp3_summary.csv for the measured comparison"
     )
     return metrics
 

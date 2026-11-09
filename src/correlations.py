@@ -119,12 +119,15 @@ def corr_p2_u2_formula(C: np.ndarray, U: np.ndarray) -> float:
     """corr[p^2, U^2] via the paper's closed-form relation (Eq. C.16 / 4.9):
         corr[p^2, U^2] = 2 [phi(C,U) - chi^2(U)] p(t)^2 U(t)^2
                        = 2 corr[p, U^2] p(t)
-    Eq. C.16 is obtained (Eq. C.9-C.15) by substituting the price variance
-    coefficient mu^2(p) with the "market-based variance" expression Eq. C.14,
-    cited from Olkhov (2022; 2023) rather than re-derived in this appendix.
-    See corr_p2_u2_direct for the exact empirical definition (Eq. C.9) this
-    closed form is meant to approximate, and the "statistical interdependence"
-    experiment for the measured gap between the two.
+    Eq. C.16 is reached (Eq. C.9-C.15) by rewriting the exact identity
+        corr[p^2, U^2] = [1 + psi^2(C) - (1+mu^2(p))(1+chi^2(U))] p(t)^2 U(t)^2
+    (Eq. C.13, an exact rearrangement of Eq. C.9/C.7/C.11/C.12; see
+    price_variance_coefficient_exact) and then replacing the price variance
+    coefficient mu^2(p) (Eq. C.11) with the "market-based variance" formula
+    Eq. C.14, cited from Olkhov (2022; 2023) rather than derived from C and U
+    moments in this appendix. See corr_p2_u2_direct for the exact empirical
+    value (Eq. C.9) this closed form approximates, and the "statistical
+    interdependence" experiment for the measured gap between the two.
     """
     return 2.0 * corr_p_u2_formula(C, U) * vwap(C, U)
 
@@ -140,11 +143,47 @@ def corr_p2_u2_direct(C: np.ndarray, p: np.ndarray, U: np.ndarray) -> float:
     return float(np.mean(C**2) - np.mean(p**2) * np.mean(U**2))
 
 
-def price_variance_coefficient(C: np.ndarray, U: np.ndarray, p: np.ndarray) -> float:
-    """Coefficient of variation mu^2(p) of price (paper Eq. C.11-C.15):
+def price_variance_coefficient_exact(C: np.ndarray, p: np.ndarray, U: np.ndarray) -> float:
+    """The literal coefficient of variation mu^2(p) of price (Eq. C.11):
+        mu^2(p) = cov[p,p] / p(t)^2 = E[p(t_i)^2]/p(t)^2 - 1
+    computed directly from the price series, with p(t) the VWAP (Eq. 3.1/
+    A.6), since E[p(t_i)] = p(t) (Eq. A.9) uses VWAP as the mean price
+    throughout App. A-C, not the simple average pi(t) (Eq. 3.2).
+    Substituting this exact value into Eq. C.13 reproduces corr_p2_u2_direct
+    (Eq. C.9) exactly; it generally differs from price_variance_coefficient's
+    Eq. C.14 formula, which is not an algebraic identity in C(t_i), U(t_i)
+    moments alone.
+    """
+    p_vwap = vwap(C, U)
+    return float(np.mean(p**2)) / p_vwap**2 - 1.0
+
+
+def price_variance_coefficient(C: np.ndarray, U: np.ndarray) -> float:
+    """Coefficient of variation mu^2(p) of price via the paper's
+    "market-based variance" formula (Eq. C.14, cited from Olkhov 2022;
+    2023), substituted into Eq. C.13 to obtain the closed form Eq. C.16:
         mu^2(p) = [psi^2(C) - 2 phi(C,U) + chi^2(U)] / [1 + chi^2(U)]
+    This is a model-based expression in the moments of C(t_i) and U(t_i)
+    alone, distinct in general from the literal sample coefficient of
+    variation of p(t_i) (price_variance_coefficient_exact), since Var(p)
+    depends on the joint distribution of C and U beyond their second
+    moments. See results/RESULTS.md, Experiment 3, for the measured gap.
     """
     coeffs = variation_coefficients(C, U)
     return (
         coeffs["psi2"] - 2.0 * coeffs["phi"] + coeffs["chi2"]
     ) / (1.0 + coeffs["chi2"])
+
+
+def corr_p2_u2_via_exact_mu2(C: np.ndarray, p: np.ndarray, U: np.ndarray) -> float:
+    """corr[p^2, U^2] via Eq. C.13, using the literal mu^2(p)
+    (price_variance_coefficient_exact) rather than the Eq. C.14 formula.
+    This is an exact algebraic rearrangement of Eq. C.9/C.7/C.11/C.12 and
+    matches corr_p2_u2_direct to floating-point precision; it isolates the
+    approximation introduced by Eq. C.14 in corr_p2_u2_formula.
+    """
+    coeffs = variation_coefficients(C, U)
+    psi2, chi2 = coeffs["psi2"], coeffs["chi2"]
+    mu2_exact = price_variance_coefficient_exact(C, p, U)
+    p_vwap, u_mean = vwap(C, U), mean_volume(U)
+    return (1.0 + psi2 - (1.0 + mu2_exact) * (1.0 + chi2)) * p_vwap**2 * u_mean**2

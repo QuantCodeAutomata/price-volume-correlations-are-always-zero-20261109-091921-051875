@@ -106,6 +106,36 @@ def test_corr_p2_u2_direct_matches_C_definition():
     assert direct == pytest.approx(expected, rel=1e-12)
 
 
+def test_corr_p2_u2_exact_mu2_matches_direct_eq_C13():
+    """Eq. C.13 (1+psi^2(C) - (1+mu^2(p))(1+chi^2(U))) p(t)^2 U(t)^2, using the
+    literal sample coefficient of variation of price (Eq. C.11) rather than
+    the Eq. C.14 "market-based variance" substitute, is an exact algebraic
+    rearrangement of Eq. C.9/C.7/C.11/C.12 and must match corr_p2_u2_direct
+    to floating-point precision. This isolates Eq. C.14 as the sole source
+    of the approximation in corr_p2_u2_formula (Eq. C.16)."""
+    trades = gen.generate_correlated_trades(500, seed=12, correlation_strength=0.7)
+    C, p, U = trades["C"], trades["p"], trades["U"]
+    direct = corr.corr_p2_u2_direct(C, p, U)
+    via_exact_mu2 = corr.corr_p2_u2_via_exact_mu2(C, p, U)
+    assert via_exact_mu2 == pytest.approx(direct, rel=1e-9)
+
+
+def test_price_variance_coefficient_eq_C14_differs_from_exact_mu2():
+    """The Eq. C.14 "market-based variance" formula for mu^2(p), cited from
+    Olkhov (2022; 2023), is a model-based expression in the moments of
+    C(t_i) and U(t_i) alone; it need not equal the literal sample
+    coefficient of variation of p(t_i) (Eq. C.11), since Var(p) generally
+    depends on the joint distribution of C and U beyond their second
+    moments. Both are finite and non-negative for a non-degenerate sample."""
+    trades = gen.generate_correlated_trades(500, seed=13, correlation_strength=0.7)
+    C, p, U = trades["C"], trades["p"], trades["U"]
+    mu2_formula = corr.price_variance_coefficient(C, U)
+    mu2_exact = corr.price_variance_coefficient_exact(C, p, U)
+    assert mu2_formula >= 0
+    assert mu2_exact >= 0
+    assert mu2_formula != pytest.approx(mu2_exact, rel=1e-6)
+
+
 def test_no_lookahead_correlation_depends_only_on_window_trades():
     """Appending future trades must not change a correlation computed on the
     first N trades of the averaging interval (no look-ahead, Eq. A.1)."""

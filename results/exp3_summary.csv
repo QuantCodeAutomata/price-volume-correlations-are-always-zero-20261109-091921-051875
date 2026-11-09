@@ -3,3 +3,4 @@ metric,value
 "median corr[p^2,U^2] direct / Eq.C.16 formula ratio (paper implies 1; measured limit is 2)",3.3084339278171635
 "median |corr[p,U^2]| for correlated C,U (should be > 0)",8333.232613756627
 max chi^2(U) for constant-volume case (should be ~0),0.0
+"max |corr[p^2,U^2] direct - via exact mu^2(p)| (Eq. C.13, exact)",6.103515625e-05

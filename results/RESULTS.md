@@ -72,6 +72,7 @@ case and the constant-volume limit.
 | Median \|corr[p,U²]\|, correlated C,U | 8333.23 | non-zero, unlike corr[p,U] | reproduced |
 | Max χ²(U), constant-volume case | 0.0 | 0 by construction | reproduced |
 | Median ratio `corr[p²,U²]` direct (Eq. C.9) / Eq. C.16 closed form, correlated C,U | 3.308 | paper's Eq. 4.9/C.16 implies ratio ≡ 1 | partially reproduced |
+| Max \|corr[p²,U²] direct (Eq. C.9) − Eq. C.13 with the exact `mu²(p)`\|, non-degenerate trials | 6.1e-5 (relative to magnitude ~1e10-1e11) | Eq. C.13 is an exact algebraic rearrangement of Eq. C.9 | reproduced |
 
 `corr[p, U^2]` (Eq. C.8) is confirmed as an exact algebraic identity of the
 trade equation (Eq. A.2): the direct empirical computation
@@ -98,7 +99,15 @@ restatement of Eq. C.9. This is a property of the derivation chain
 (Eq. C.9 → C.11–C.15 → C.16) itself, confirmed symbolically and numerically
 in this replication, not an implementation discrepancy: the identity
 (Eq. C.8) it depends on for `corr[p,U^2]` is independently verified exact
-above. See "Deviations from the paper" below.
+above. This is confirmed directly: substituting the *literal* sample
+coefficient of variation of price, `mu^2(p) = E[p(t_i)^2]/p(t)^2 - 1`
+computed from the price series itself, into the exact rearrangement
+Eq. C.13 reproduces the direct computation of `corr[p^2,U^2]` (Eq. C.9) to
+within 6.1e-5 out of values of order 1e10-1e11, i.e. floating-point
+precision, in every non-degenerate trial — isolating the Eq. C.14
+"market-based variance" substitution, not the algebra of Eq. C.9/C.13, as
+the source of the measured 1:3.31 gap. See "Deviations from the paper"
+below.
 
 Figure: `exp3_interdependence.png` (left: `corr[p,U^2]` direct vs. Eq. C.8,
 on the identity line as expected; right: `corr[p^2,U^2]` direct vs. the
