@@ -141,8 +141,8 @@ Eq. 4.9/C.16 closed form, with the measured ~2x gap). Table:
 
 ## Not reproduced
 
-Nothing in the scope of the selected experiments was left unreproduced. All
-three experiments (verification of `corr[p,U]≡0`, the conventional
+Nothing in the paper's three price-volume correlation results was left
+unreproduced. All three experiments (verification of `corr[p,U]≡0`, the conventional
 estimator's spurious non-zero value, and the alternative correlations
 `corr[p,U^2]`/`corr[p^2,U^2]`) produced the artifacts and metrics listed
 above; the only partial result is the measured 1:3.31 instead of 1:1 ratio

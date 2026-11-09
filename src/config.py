@@ -23,7 +23,7 @@ SEEDS = [0, 1, 2, 3, 4]
 # Distributions used to draw non-degenerate random trade volumes U(t_i).
 # The paper does not specify a distribution; lognormal, uniform, gamma and
 # exponential cover qualitatively different shapes (skewed, bounded,
-# heavy/light tailed), as suggested by the paper's implementation notes.
+# heavy/light tailed).
 VOLUME_DISTRIBUTIONS = ["lognormal", "uniform", "gamma", "exponential"]
 
 # Distributions used to draw the random trade values C(t_i).

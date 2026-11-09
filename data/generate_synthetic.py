@@ -8,7 +8,7 @@ U(t_i) of N consecutive trades made during an averaging interval Delta
 distribution" of trades and does not prescribe a specific generator; this
 module draws random, strictly positive trade volumes and trade values from
 a selection of non-degenerate distributions and derives trade prices from
-the trade equation, as described in the experiments' implementation notes.
+the trade equation (Eq. A.2).
 """
 
 from __future__ import annotations
