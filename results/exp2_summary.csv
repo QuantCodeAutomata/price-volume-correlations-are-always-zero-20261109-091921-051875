@@ -1,0 +1,5 @@
+metric,value
+max |corr_e_direct - corr_e_formula| (Eq. 4.7 vs 4.8/B.8),1.4551915228366852e-11
+"max |true corr[p,U]| (should be ~0, Eq. 4.3/A.11)",4.547473508864641e-13
+"max |corr[p,U]_e| for constant volumes (should be ~0)",0.0
+"median |corr[p,U]_e| for random volumes (should be > 0)",816.1063589923872

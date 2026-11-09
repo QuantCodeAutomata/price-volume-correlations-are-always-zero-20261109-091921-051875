@@ -1,0 +1,5 @@
+metric,value
+"max |corr[p,U^2] direct - formula| (Eq. C.8, exact)",1.1641532182693481e-10
+"median corr[p^2,U^2] direct / Eq.C.16 formula ratio (paper implies 1; measured limit is 2)",3.3084339278171635
+"median |corr[p,U^2]| for correlated C,U (should be > 0)",8333.232613756627
+max chi^2(U) for constant-volume case (should be ~0),0.0
